@@ -1,0 +1,104 @@
+{% extends "layout.html" %}
+{% block content %}
+   <h1 class="page-header">Predictor</h1>
+  	Given a set of printing parameters, this predictor will predict the expected livePercent, deadPercent and elasticity of the resulting print.  This method uses a random forest method to predict the outcome.
+   <h2>Inputs</h2>
+   <form id="predictor-form">
+
+   	  <div class="form-group">
+   	  	<div class="checkbox">
+		  <label><input id="cl-enabled" type="checkbox" checked>Cross Linking Enabled?</label>
+		</div>
+   	  </div>
+   	  <div id="crosslink-options">
+		  <div class="form-group">
+		    <label for="exampleInputEmail1">CL Intensity</label>
+		    <input type="text" class="form-control" id="cl-intensity">
+		  </div>
+		  <div class="form-group">
+		    <label for="exampleInputPassword1">CL Duration</label>
+		    <input type="text" class="form-control" id="cl-duration">
+		  </div>
+	  </div>
+	  <div class="form-group">
+	    <label for="exampleInputPassword1">Extruder 1 Pressure</label>
+	    <input type="text" class="form-control" id="extruder1">
+	  </div>
+	  <div class="form-group">
+	    <label for="exampleInputPassword1">Extruder 2 Pressure</label>
+	    <input type="text" class="form-control" id="extruder2">
+	  </div>
+	   <div class="form-group">
+	    <label for="exampleInputPassword1">Layer Height</label>
+	    <input type="text" class="form-control" id="layer-height">
+	  </div>
+	   <div class="form-group">
+	    <label for="exampleInputPassword1">Number of Layers</label>
+	    <input type="text" class="form-control" id="layer-num">
+	  </div>
+	  <div class="form-group">
+	    <label for="exampleInputPassword1">Wellplate Type</label>
+	    <input type="text" class="form-control" id="wellplate">
+	  </div>
+	  <button type="submit" class="btn btn-default">Submit</button>
+	</form>
+   <div style="margin-top:20px; display:none;" id="results">
+   		<h2>Results</h2>
+   		<div id="results-container"></div>
+   </div>
+{% endblock %}
+{% block postbody %}
+<script>
+	$('.nav-sidebar li').removeClass('active');
+	$('#predictor-nav').addClass('active');
+
+	function Predictor(){
+	}
+
+	Predictor.prototype.initialize = function(){
+		var that = this;
+		$("#predictor-form").submit(function(event){
+    	// cancels the form submission
+    		event.preventDefault();
+    		that.submitForm();
+		});
+
+		$('#cl-enabled').change(function() {
+	        if($(this).is(":checked")) {
+	        	$('#crosslink-options').css('display', 'block');
+	        }else{
+	        	$('#crosslink-options').css('display', 'none');
+	        }
+    	});
+	}
+
+	Predictor.prototype.submitForm = function(){
+		var that = this;
+		var cl_enabled = $('#cl-enabled').is(":checked");
+  		var cl_duration = cl_enabled ? $("#cl-duration").val() : 0;
+	    var cl_intensity =  cl_enabled ? $("#cl-intensity").val() : 0;
+	    var extruder1 = $("#extruder1").val();
+	    var extruder2 = $("#extruder2").val();
+	    var layer_height = $("#layer-height").val();
+	    var layer_num = $("#layer-num").val();
+	    var wellplate = $("#wellplate").val();
+	    debugger;
+	    $.ajax({
+	        type: "GET",
+	        url: "/predictor/get_prediction",
+	        data: "cl_enabled=" + cl_enabled + "&cl_duration=" + cl_duration + "&cl_intensity=" + cl_intensity + '&extruder1=' + extruder1 + '&extruder2=' + extruder2 + '&layer_height=' + layer_height + '&layer_num=' + layer_num + '&wellplate=' + wellplate,
+	        success : function(data){
+	            that.displayResult(data);
+	        }
+	    });
+	}
+
+	Predictor.prototype.displayResult = function(data){
+		$('#results').css('display', 'block');
+		$('#results-container').html(data);
+	}
+
+	var predictor = new Predictor()
+	predictor.initialize()
+</script>
+{% endblock %}

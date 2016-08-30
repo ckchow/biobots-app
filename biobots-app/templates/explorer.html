@@ -1,0 +1,219 @@
+{% extends "layout.html" %}
+
+{% block content %}
+	<h1 class="page-header">Data Explorer</h1>
+    This is data explorer for the entire dataset. Use the search boxes to select subsets of the data.
+
+    The dropdown selectors choose two variables to plot against each other.
+    <h2>Explorer</h2>
+    <style>
+        .search-box{
+            width:50px;
+        }
+        .dataTables_length{
+            display:none;
+        }
+        .data-table{
+            display:none;
+        }
+        #selectors{
+            display:none;
+        }
+
+    </style>
+
+
+    <div id="spinner">
+    <h3>Loading...</h3>
+    </div>
+    <table class="data-table display compact" cellspacing="0" width="100%">
+	    <thead>
+	   		<tr>
+	   			<th>CL Duration</th>
+	   			<th>CL Intensity</th>
+	   			<th>Extruder 1</th>
+	   			<th>Extruder 2</th>
+	   			<th>Layer Height</th>
+	   			<th># Layers</th>
+	   			<th>Wellplate</th>
+	   			<th>% Live</th>
+	   			<th>Elasticity</th>
+	   		</tr>
+	   	<thead>
+		<tfoot>
+	   		<tr>
+	   			<th>CL Duration</th>
+	   			<th>CL Intensity</th>
+	   			<th>Extruder 1</th>
+	   			<th>Extruder 2</th>
+	   			<th>Layer Height</th>
+	   			<th>Number of Layers</th>
+	   			<th>Wellplate</th>
+	   			<th>Percent Live</th>
+	   			<th>Elasticity</th>
+	   		</tr>
+	   	</tfoot>
+	   	<tbody>
+	   		{% for row in rows %}
+	   		<tr>
+	   			<td class="cl_duration">{{row["cl_duration"]}}</td>
+	   			<td class="cl_intensity">{{row["cl_intensity"]}}</td>
+	   			<td class="extruder1">{{row["extruder1"]}}</td>
+	   			<td class="extruder2">{{row["extruder2"]}}</td>
+	   			<td class="layerHeight">{{row["layerHeight"]}}</td>
+	   			<td class="layerNum">{{row["layerNum"]}}</td>
+	   			<td class="wellplate">{{row["wellplate"]}}</td>
+	   			<td class="livePercent">{{row["livePercent"]}}</td>
+	   			<td class="elasticity">{{row["elasticity"]}}</td>
+	   		</tr>
+	   		{% endfor %}
+	   	</tbody>
+   	</table>
+    <div id="selectors">
+    <select id="x-select">
+        <option value="cl_duration">CL Duration</option>
+        <option value="cl_intensity">CL Intensity</option>
+        <option value="extruder1">Extruder 1</option>
+        <option value="extruder2">Extruder 2</option>
+        <option value="layerHeight">Layer Height</option>
+        <option value="layerNum"># Layers</option>
+        <option value="wellplate">Wellplate</option>
+        <option value="livePercent">Percent Live</option>
+        <option value="elasticity">Elasticity</option>
+    </select>
+    <select id="y-select">
+        <option value="cl_duration">CL Duration</option>
+        <option value="cl_intensity">CL Intensity</option>
+        <option value="extruder1" selected>Extruder 1</option>
+        <option value="extruder2">Extruder 2</option>
+        <option value="layerHeight">Layer Height</option>
+        <option value="layerNum"># Layers</option>
+        <option value="wellplate">Wellplate</option>
+        <option value="livePercent">Percent Live</option>
+        <option value="elasticity">Elasticity</option>
+    </select>
+    </div>
+    <div id="container"></div>
+{% endblock %}
+
+{% block postbody %}
+	<script>
+	    function Explorer(){
+	        this.tablediv = $('table');
+	        this.table = null;
+            this.container = $('#container');
+	    }
+
+	    Explorer.prototype.zip = function(arrays) {
+            return Array.apply(null,Array(arrays[0].length)).map(function(_,i){
+                return arrays.map(function(array){return array[i]})
+            });
+        }
+
+        Explorer.prototype.initialize = function(){
+            $('.nav-sidebar li').removeClass('active');
+		    $('#explorer-nav').addClass('active');
+
+		    // Setup - add a text input to each footer cell
+            $('table tfoot th').each( function () {
+                var title = $(this).text();
+                $(this).html( '<input class="search-box" type="text" placeholder="Search" />' );
+            });
+
+            this.table = $(this.tablediv).DataTable( {
+              paginate: true,
+              scrollY: 300,
+              pageLength: 500,
+              "initComplete": function(settings, json) {
+                $('.data-table').show();
+                $('#spinner').hide();
+                $('#selectors').show();
+              }
+            });
+
+            this.bindEvents();
+            this.drawPlot();
+        };
+
+        Explorer.prototype.bindEvents = function(){
+            var that = this;
+            this.table.columns().every( function () {
+                var that = this;
+                $( 'input', this.footer() ).on( 'keyup change', function () {
+                    if ( that.search() !== this.value ) {
+                        that.search( this.value ).draw();
+                    }
+                });
+            });
+
+            this.table.on( 'draw.dt', function(){that.drawPlot()}.bind(that));
+
+            $('#x-select').on('change', function(){that.drawPlot()}.bind(that));
+            $('#y-select').on('change', function(){that.drawPlot()}.bind(that));
+        };
+
+        Explorer.prototype.drawPlot = function(){
+        	var xselect = $( "#x-select option:selected" ).attr('value');
+            var yselect = $( "#y-select option:selected" ).attr('value');
+            var xdata = $('.'+xselect).map(function(i, e) {return Number($(e).html())});
+            var ydata = $('.'+yselect).map(function(i, e) {return Number($(e).html())});
+            var xy = this.zip([xdata, ydata]);
+
+            $(this.container).highcharts({
+                chart : {
+                    type: 'scatter',
+                    zoom: 'xy'
+                },
+                title: {
+                    text: xselect + ' vs ' + yselect,
+                    x: -20 //center
+                },
+                xAxis: {
+                    title: {
+                        enabled: true,
+                        text: xselect
+                    },
+                    startOnTick: true,
+                    endOnTick: true,
+                    showLastLabel: true
+                },
+                yAxis: {
+                    title: {
+                        text: yselect
+                    }
+                },
+                plotOptions: {
+                    scatter: {
+                        marker: {
+                            radius: 5,
+                            states: {
+                                hover: {
+                                    enabled: true,
+                                    lineColor: 'rgb(0,100,0)'
+                                }
+                            }
+                        },
+                        states: {
+                            hover: {
+                                marker: {
+                                    enabled: false
+                                }
+                            }
+                        },
+                        tooltip: {
+                            //headerFormat: '<b>{series.name}</b><br>',
+                            pointFormat: '{point.x} ' + xselect + ', {point.y} ' + yselect
+                        },
+
+                    }
+                },
+                series: [{
+                    data: xy
+                }]
+            });
+        };
+
+        var explorer = new Explorer();
+        explorer.initialize();
+	</script>
+{% endblock %}

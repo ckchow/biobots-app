@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+{% block content %}
+   <h1 class="page-header">Overview</h1>
+   <p>
+  	This is a webapp designed to provide predictions of livePercent, elasticity,
+	deadPercent based on the characteristics of the run (CL, resolution, wellplate type, pressures).
+	</p>
+	<p>
+	Note that predictions from this app are not probably not useful because the data
+	that are used in training are likely to be synthetic.
+	</p>
+	<p>
+	There are already very powerful web-based for interactive exploratory data analysis
+	(like jupyter and zeppelin), so I thought a tool designed around predictive analytics 
+	for print run data would be more interesting and useful. 
+	</p>
+	<p>
+	Specifically, customers are probably interested in producing structures with as much
+	living material as they can given the run parameters. According to the <a href="https://www.biobots.io/biowiki/matrix-bioinks/">information available about cross-linking</a>, it seems like it is a desired process to control the mechanical properties of the structure.  However, it comes at a cost of reducing the viability (live percentage) of the structure.  
+	</p>
+	<p>
+	This tool enables end-users and internal teams to predict and potentially model the outcomes of their runs in order to optimize for high live percentages and desired mechanical properties (like elasticity).
+	</p>
+
+  <h2>Usage Notes</h2>
+  	<h3>Live Percentage Predictor</h3>
+  	<p>
+  	The design of the predictor is very basic (a random forest regressor) and probably the best off-the-shelf
+  	regressor for most applications. Improvements could be made by using gradient boosted trees or by doing
+  	careful feature selection and engineering. Also, some extensions would need to be made to modularize the
+  	particular predictor model so that one can easily test multiple types and retrieve stored models, etc.
+  	</p>
+  	<h3>Data Explorer</h3>
+  	<p>
+  	The data explorer is a simple way to determine if there are correlations between the various variables
+  	in the dataset. By using the search tools to hold certain variables constant, two variables can be plotted against each other for a preliminary analysis of any discernable trends/correlations.  
+  	</p>
+  	<p>
+  	For example, CL Duration can be held constant, while CL Intensity and Live Percentage are plotted against each other to see the effects of CL Intensity on Live Percentage. However, when plotting livePercent against various variables, it's hard to see any global trends, e.g.  clusters or trendlines. If the dataset itself was randomly generated/synthesized, this would explain the lack of discernable trends.
+  	</p>
+  	<p>
+  	If extended to include biobot and customer information, the data explorer could also be used to track and determine anomalies within certain biobots or customers.  For example, if a livePercentage trend line of a biobot with a particular serial number is underperforming in comparison to other biobots, it could be a sign that the biobot in question is in need of maintenance.
+  	</p>
+  	
+{% endblock %}
